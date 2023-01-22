@@ -1,12 +1,28 @@
 package Entities;
 
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
+import com.github.javafaker.Faker;
+
 public class BookingDates {
+
+    private static int MAX_FUTURE_BOOKING_DAYS = 30;
+    private static int MAX_BOOKING_INTERVAL_IN_DAYS = 180;
 
     private String checkin;
     private String checkout;
-    public BookingDates(String checkin, String checkout) {
-        this.checkin = checkin;
-        this.checkout = checkout;
+
+    public BookingDates() {
+        Faker faker = new Faker();
+        Date startDate =
+                faker.date().future(MAX_FUTURE_BOOKING_DAYS, 1, TimeUnit.DAYS);
+        Date endDate = faker.date().future(MAX_BOOKING_INTERVAL_IN_DAYS,
+                TimeUnit.DAYS, startDate);
+
+        this.checkin = startDate.toString();
+        this.checkout = endDate.toString();
+
     }
 
     public String getCheckin() {
@@ -24,6 +40,4 @@ public class BookingDates {
     public void setCheckout(String checkout) {
         this.checkout = checkout;
     }
-
-
 }

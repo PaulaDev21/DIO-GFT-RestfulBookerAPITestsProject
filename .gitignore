@@ -2,7 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=java
 
 .vscode/*
-.allure-results/*
+allure-results/*
 
 ### Java ###
 # Compiled class file

@@ -24,78 +24,59 @@ public class BookingTests {
     private static User user;
 
     @BeforeAll
-    public static void Setup(){
+    public static void Setup() {
         RestAssured.baseURI = "https://restful-booker.herokuapp.com";
         faker = new Faker();
-        user = new User(faker.name().username(),
-                faker.name().firstName(),
-                faker.name().lastName(),
-                faker.internet().safeEmailAddress(),
-                faker.internet().password(8,10),
+        user = new User(faker.name().username(), faker.name().firstName(),
+                faker.name().lastName(), faker.internet().safeEmailAddress(),
+                faker.internet().password(8, 10),
                 faker.phoneNumber().toString());
 
-        bookingDates = new BookingDates("2018-01-02", "2018-01-03");
+        bookingDates = new BookingDates();
         booking = new Booking(user.getFirstName(), user.getLastName(),
-                (float)faker.number().randomDouble(2, 50, 100000),
-                true,bookingDates,
-                "");
-        RestAssured.filters(new RequestLoggingFilter(),new ResponseLoggingFilter(), new ErrorLoggingFilter());
+                (float) faker.number().randomDouble(2, 50, 100000), true,
+                bookingDates, "");
+        RestAssured.filters(new RequestLoggingFilter(),
+                new ResponseLoggingFilter(), new ErrorLoggingFilter());
     }
 
     @BeforeEach
-    void setRequest(){
-        request = given().config(RestAssured.config().logConfig(logConfig().enableLoggingOfRequestAndResponseIfValidationFails()))
-                .contentType(ContentType.JSON)
-                .auth().basic("admin", "password123");
+    void setRequest() {
+        request = given()
+                .config(RestAssured.config().logConfig(logConfig()
+                        .enableLoggingOfRequestAndResponseIfValidationFails()))
+                .contentType(ContentType.JSON).auth()
+                .basic("admin", "password123");
     }
 
     @Test
-    public void getAllBookingsById_returnOk(){
-            Response response = request
-                                    .when()
-                                        .get("/booking")
-                                    .then()
-                                        .extract()
-                                        .response();
-
+    public void getAllBookingsById_returnOk() {
+        Response response =
+                request.when().get("/booking").then().extract().response();
 
         Assertions.assertNotNull(response);
         Assertions.assertEquals(200, response.statusCode());
     }
 
     @Test
-    public void  getAllBookingsByUserFirstName_BookingExists_returnOk(){
-                    request
-                        .when()
-                            .queryParam("firstName", "Carol")
-                            .get("/booking")
-                        .then()
-                            .assertThat()
-                            .statusCode(200)
-                            .contentType(ContentType.JSON)
-                        .and()
-                        .body("results", hasSize(greaterThan(0)));
+    public void getAllBookingsByUserFirstName_BookingExists_returnOk() {
+        request.when().queryParam("firstName", "Carol").get("/booking").then()
+                .assertThat().statusCode(200).contentType(ContentType.JSON)
+                .and().body("results", hasSize(greaterThan(0)));
 
     }
 
     @Test
-    public void  CreateBooking_WithValidData_returnOk(){
-
-        Booking test = booking;
-        given().config(RestAssured.config().logConfig(logConfig().enableLoggingOfRequestAndResponseIfValidationFails()))
-                    .contentType(ContentType.JSON)
-                        .when()
-                        .body(booking)
-                        .post("/booking")
-                        .then()
-                        .body(matchesJsonSchemaInClasspath("createBookingRequestSchema.json"))
-                        .and()
-                        .assertThat()
-                        .statusCode(200)
-                        .contentType(ContentType.JSON).and().time(lessThan(2000L));
-
-
-
+    public void CreateBooking_WithValidData_returnOk() {
+        given().config(RestAssured.config()
+                .logConfig(logConfig()
+                        .enableLoggingOfRequestAndResponseIfValidationFails()))
+                .contentType(ContentType.JSON).when().body(booking)
+                .post("/booking").then()
+                .body(matchesJsonSchemaInClasspath(
+                        "createBookingRequestSchema.json"))
+                .and().assertThat().statusCode(200)
+                .contentType(ContentType.JSON).and().time(lessThan(2000L));
     }
 
 }
