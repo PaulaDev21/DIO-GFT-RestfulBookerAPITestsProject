@@ -3,21 +3,14 @@ import Entities.BookingDates;
 import Entities.User;
 import com.github.javafaker.Faker;
 
-import io.qameta.allure.internal.shadowed.jackson.core.JsonParser;
 import io.restassured.RestAssured;
-import io.restassured.config.RestAssuredConfig;
 import io.restassured.filter.log.ErrorLoggingFilter;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.parsing.Parser;
-import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
-import io.restassured.response.ResponseOptions;
-import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.*;
 
