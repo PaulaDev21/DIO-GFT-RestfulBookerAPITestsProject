@@ -14,12 +14,17 @@ import io.restassured.specification.RequestSpecification;
 
 import org.junit.jupiter.api.*;
 
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 import static io.restassured.RestAssured.given;
 import static io.restassured.config.LogConfig.logConfig;
 import static io.restassured.module.jsv.JsonSchemaValidator.*;
 import static org.hamcrest.Matchers.*;
 
 public class BookingTests {
+    private static int MAX_FUTURE_BOOKING_DAYS = 30;
+    private static int MAX_BOOKING_INTERVAL_IN_DAYS = 180;
     public static Faker faker;
     private static RequestSpecification request;
     private static Booking booking;
@@ -36,7 +41,11 @@ public class BookingTests {
                 faker.internet().safeEmailAddress(), faker.internet().password(8, 10),
                 faker.phoneNumber().toString());
 
-        bookingDates = new BookingDates();
+        Date startDate =
+                faker.date().future(MAX_FUTURE_BOOKING_DAYS, 1, TimeUnit.DAYS);
+        Date endDate = faker.date().future(MAX_BOOKING_INTERVAL_IN_DAYS,
+                TimeUnit.DAYS, startDate);
+        bookingDates = new BookingDates(startDate.toString(), endDate.toString());
         booking = new Booking(user.getFirstName(), user.getLastName(),
                 (float) faker.number().randomDouble(2, 50, 100000), true, bookingDates,
                 "non smoking");
@@ -139,5 +148,7 @@ public class BookingTests {
     void authentication() {
         request.auth().basic("admin", "password123");
     }
+
+
 
 }
