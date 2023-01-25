@@ -22,7 +22,6 @@ public class BookingDates {
 
         this.checkin = startDate.toString();
         this.checkout = endDate.toString();
-
     }
 
     public String getCheckin() {
