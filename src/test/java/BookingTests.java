@@ -10,11 +10,14 @@ import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
+import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 
+import org.apache.commons.lang3.ObjectUtils.Null;
 import org.junit.jupiter.api.*;
 
 import java.util.Date;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static io.restassured.RestAssured.given;
@@ -41,10 +44,8 @@ public class BookingTests {
                 faker.internet().safeEmailAddress(), faker.internet().password(8, 10),
                 faker.phoneNumber().toString());
 
-        Date startDate =
-                faker.date().future(MAX_FUTURE_BOOKING_DAYS, 1, TimeUnit.DAYS);
-        Date endDate = faker.date().future(MAX_BOOKING_INTERVAL_IN_DAYS,
-                TimeUnit.DAYS, startDate);
+        Date startDate = faker.date().future(MAX_FUTURE_BOOKING_DAYS, 1, TimeUnit.DAYS);
+        Date endDate = faker.date().future(MAX_BOOKING_INTERVAL_IN_DAYS, TimeUnit.DAYS, startDate);
         bookingDates = new BookingDates(startDate.toString(), endDate.toString());
         booking = new Booking(user.getFirstName(), user.getLastName(),
                 (float) faker.number().randomDouble(2, 50, 100000), true, bookingDates,
@@ -63,32 +64,31 @@ public class BookingTests {
          * .contentType(ContentType.JSON) .auth() .basic("admin", "password123");
          */
         request = given().config(RestAssured.config()).contentType(ContentType.JSON);
-
         // .auth().basic(user.getUsername(), user.getPassword());
     }
 
     @Test
     public void authentication_WithInvalidUserName() {
-        Response response = request.auth().basic("invader", "password123").get();
+        Response response = getToken("invader", "password123");
 
         Assertions.assertEquals(200, response.getStatusCode());
-        Assertions.assertFalse(response.getBody().asString().contains("token"));
+        Assertions.assertEquals("Bad credentials", token);
     }
 
     @Test
     public void authentication_WithInvalidPassword() {
-        Response response = request.auth().basic("admin", "wrongpass").get();
+        Response response = getToken("admin", "wrongpass");
 
         Assertions.assertEquals(200, response.getStatusCode());
-        Assertions.assertFalse(response.getBody().asString().contains("token"));
+        Assertions.assertEquals("Bad credentials", token);
     }
 
     @Test
     public void authentication_WithInvalidNameAndPassword() {
-        Response response = request.auth().basic("invader", "wrongpass").get();
+        Response response = getToken("invader", "wrongpass");
 
         Assertions.assertEquals(200, response.getStatusCode());
-        Assertions.assertFalse(response.getBody().asString().contains("token"));
+        Assertions.assertEquals("Bad credentials", token);
     }
 
     @Test
@@ -147,6 +147,19 @@ public class BookingTests {
 
     void authentication() {
         request.auth().basic("admin", "password123");
+    }
+
+
+    private Response getToken(String username, String password) {
+        String jsonLoginStructure =
+                "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
+        Response response = given().contentType("application/json").body(jsonLoginStructure).when()
+                .post("/auth").then().extract().response();
+        token = response.body().path("token");
+        if (Objects.isNull(token)) {
+            token = response.body().path("reason");
+        }
+        return response;
     }
 
 
