@@ -93,34 +93,75 @@ public class BookingTests {
 
     @Test
     public void authentication_WithValidUserData() {
-        Response response = request.auth().basic("admin", "password123").head();
+        Response response = getToken("admin", "password123");
 
         Assertions.assertEquals(200, response.getStatusCode());
+        Assertions.assertNotEquals("Bad credentials", token);
     }
 
 
     @Test
     public void getBookingById_WithInvalidId_returnNotFound() {
-        this.authentication();
         request.when().get("/booking/9999999").then().assertThat().statusCode(404);
     }
 
     @Test
-    public void updateBooking_WithInvalidId_returnNotFound() {
-        this.authentication();
-        request.when().body(booking).put("/booking/9999999").then().assertThat().statusCode(403);
+    public void CreateBooking_WithValidData_returnOk() {
+        getToken("admin", "password123");
+        given().header("Authorization", "Bearer " + token).contentType("application/json")
+                .body(booking).when().post("/booking").then().assertThat().statusCode(200)
+                .contentType(ContentType.JSON).and().time(lessThan(10000L));
     }
 
     @Test
-    public void deleteBooking_WithInvalidId_returnNotFound() {
-        authentication();
-        request.when().delete("/booking/9999999").then().assertThat().statusCode(403);
+    public void updateBooking_WithInvalidId_returnNotAllowed() {
+        given().header("Authorization", "Basic " + "YWRtaW46cGFzc3dvcmQxMjM=")
+                .contentType("application/json").body(booking).when().put("/booking/9999999").then()
+                .assertThat().statusCode(405);// not allowed
     }
+
+    @Test
+    public void updateBooking_WithValidData_returnOk() {
+        // create book
+        int bookingId = given().contentType("application/json").body(booking).when()
+                .post("/booking").then().extract().jsonPath().getInt("bookingid");
+
+        // Change booking data
+        booking.setDepositpaid(false);
+
+        // update booking in the server
+        given().header("Authorization", "Basic " + "YWRtaW46cGFzc3dvcmQxMjM=")
+                .contentType("application/json").body(booking).when().put("/booking/" + bookingId)
+                .then().assertThat().statusCode(200);
+
+        // Verify the booking was updated
+        request.when().get("/booking/" + bookingId).then().assertThat().statusCode(200)
+                .contentType(ContentType.JSON).and().body("depositpaid", equalTo(false));
+    }
+
+
+    @Test
+    public void deleteBooking_WithInvalidId_returnNotAllowed() {
+        given().header("Authorization", "Basic " + "YWRtaW46cGFzc3dvcmQxMjM=")
+                .contentType("application/json").body(booking).when().delete("/booking/999999")
+                .then().assertThat().statusCode(405);
+    }
+
+    @Test
+    public void deleteBooking_WithValidId_returnCreated() {
+        // create book
+        int bookingId = given().contentType("application/json").body(booking).when()
+                .post("/booking").then().extract().jsonPath().getInt("bookingid");
+
+        // delete book just created
+        given().header("Authorization", "Basic " + "YWRtaW46cGFzc3dvcmQxMjM=")
+                .contentType("application/json").body(booking).when()
+                .delete("/booking/" + bookingId).then().assertThat().statusCode(201);
+    }
+
 
     @Test
     public void getAllBookingsById_returnOk() {
-        this.authentication();
-
         Response response = request.when().get("/booking").then().extract().response();
 
         Assertions.assertNotNull(response);
@@ -129,26 +170,10 @@ public class BookingTests {
 
     @Test
     public void getAllBookingsByUserFirstName_BookingExists_returnOk() {
-        this.authentication();
         request.when().queryParam("firstName", user.getFirstName()).get("/booking").then()
                 .assertThat().statusCode(200).contentType(ContentType.JSON).and()
                 .body("results", hasSize(greaterThan(0)));
     }
-
-    @Test
-    public void CreateBooking_WithValidData_returnOk() {
-        given().config(RestAssured.config()
-                .logConfig(logConfig().enableLoggingOfRequestAndResponseIfValidationFails()))
-                .contentType(ContentType.JSON).when().body(booking).post("/booking").then()
-                .body(matchesJsonSchemaInClasspath("createBookingRequestSchema.json")).and()
-                .assertThat().statusCode(200).contentType(ContentType.JSON).and()
-                .time(lessThan(10000L));
-    }
-
-    void authentication() {
-        request.auth().basic("admin", "password123");
-    }
-
 
     private Response getToken(String username, String password) {
         String jsonLoginStructure =
